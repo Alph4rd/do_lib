@@ -1,7 +1,7 @@
 #include <dlfcn.h>
 
 #include "utils.h"
-#include "flash_hooks.h"
+#include "flash_stuff.h"
 #include "darkorbit.h"
 #include "memory.h"
 

@@ -1,4 +1,4 @@
-#include "flash_hooks.h"
+#include "flash_stuff.h"
 #include <subhook/subhook.h>
 
 #include "memory.h"

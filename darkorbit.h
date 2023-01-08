@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "flash_hooks.h"
+#include "flash_stuff.h"
 #include "utils.h"
 #include "singleton.h"
 #include "ipc.h"

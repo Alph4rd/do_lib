@@ -9,7 +9,7 @@
 #include <sys/sem.h>
 
 #include "darkorbit.h"
-#include "flash_hooks.h"
+#include "flash_stuff.h"
 #include "memory.h"
 #include "utils.h"
 

@@ -24,7 +24,7 @@ add_library(${PROJECT_NAME} SHARED
 	memory_linux.cpp
 	avm.cpp
 	singleton.cpp
-	flash_hooks.cpp
+	flash_stuff.cpp
 )
 target_compile_options(${PROJECT_NAME} PUBLIC -Wall)
 
