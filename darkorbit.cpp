@@ -14,152 +14,152 @@ uintptr_t hook_proxy(avm::MethodEnv *env, uint32_t argc, uintptr_t *argv)
 {
 	auto &hook = Darkorbit::get().get_hooks()[env->method_info->id];
 
-    hook.method = env;
+	hook.method = env;
 
-    // Restore invokers
-    hook.restore();
-    
-    hook.handler(env, argc, argv);
+	// Restore invokers
+	hook.restore();
+	
+	hook.handler(env, argc, argv);
 
-    // Call original
-    uintptr_t r = 0;
-    Atom this_object = argv[0];
-    if (!(this_object & 7))
-    {
-        r = env->method_info->method_proc(env, argc, argv);
-    }
-    else
-    {
-        r = env->method_info->invoker(env, argc, argv);
-    }
+	// Call original
+	uintptr_t r = 0;
+	Atom this_object = argv[0];
+	if (!(this_object & 7))
+	{
+		r = env->method_info->method_proc(env, argc, argv);
+	}
+	else
+	{
+		r = env->method_info->invoker(env, argc, argv);
+	}
 
-    // Save potentially new invokers
-    if (env->method_proc != hook.envproc)
+	// Save potentially new invokers
+	if (env->method_proc != hook.envproc)
 	{
 		hook.envproc = env->method_proc;
 	}
 
-    if (hook.infoproc != env->method_info->method_proc)
+	if (hook.infoproc != env->method_info->method_proc)
 	{
 		hook.infoproc = env->method_info->method_proc;
 	}
 
-    if (hook.invoker != env->method_info->invoker)
+	if (hook.invoker != env->method_info->invoker)
 	{
 		hook.invoker = env->method_info->invoker;
 	}
 
-    // Reinstall hook
-    env->method_proc = hook_proxy;
-    env->method_info->method_proc = hook_proxy;
-    env->method_info->invoker = hook_proxy;
+	// Reinstall hook
+	env->method_proc = hook_proxy;
+	env->method_info->method_proc = hook_proxy;
+	env->method_info->invoker = hook_proxy;
 
-    return r;
+	return r;
 }
 
 void Darkorbit::hook_flash_function(avm::MethodEnv *method, MyInvoke_t handler)
 {
-    FlashHook hook;
+	FlashHook hook;
 
 	auto mit = m_hooks.find(method->method_info->id);
-    if (mit != m_hooks.end())
-    {
-        mit->second.restore();
-    }
+	if (mit != m_hooks.end())
+	{
+		mit->second.restore();
+	}
 
-    hook.envproc = method->method_proc;
-    hook.infoproc = method->method_info->method_proc;
-    hook.invoker = method->method_info->invoker;
-    hook.handler = handler;
-    hook.method = method;
+	hook.envproc = method->method_proc;
+	hook.infoproc = method->method_info->method_proc;
+	hook.invoker = method->method_info->invoker;
+	hook.handler = handler;
+	hook.method = method;
 
-    m_hooks[method->method_info->id] = hook;
+	m_hooks[method->method_info->id] = hook;
 
-    method->method_proc = hook_proxy;
-    method->method_info->method_proc = hook_proxy;
-    method->method_info->invoker = hook_proxy;
+	method->method_proc = hook_proxy;
+	method->method_info->method_proc = hook_proxy;
+	method->method_info->invoker = hook_proxy;
 
 }
 void Darkorbit::hook_flash_function(avm::MethodInfo *method, MyInvoke_t handler)
 {
-    FlashHook hook;
+	FlashHook hook;
 
 	auto mit = m_hooks.find(method->id);
-    if (mit != m_hooks.end())
-    {
-        mit->second.restore();
-    }
+	if (mit != m_hooks.end())
+	{
+		mit->second.restore();
+	}
 
-    hook.envproc = method->method_proc;
-    hook.infoproc = method->method_proc;
-    hook.invoker = method->invoker;
-    hook.handler = handler;
-    hook.method_info = method;
+	hook.envproc = method->method_proc;
+	hook.infoproc = method->method_proc;
+	hook.invoker = method->invoker;
+	hook.handler = handler;
+	hook.method_info = method;
 
-    m_hooks[method->id] = hook;
+	m_hooks[method->id] = hook;
 
-    method->method_proc = hook_proxy;
-    method->invoker = hook_proxy;
+	method->method_proc = hook_proxy;
+	method->invoker = hook_proxy;
 
 }
 
 // maybe use a global callback thingy to dispatch jit stuff
 void Darkorbit::notify_jit(avm::MethodInfo *method)
 {
-    if (!m_installed && method->name().find("autoStartEnabled") != std::string::npos)
-    {
-        hook_flash_function(method, [this] (avm::MethodEnv *env, uint32_t argc, uintptr_t *argv)
-        {
-            install(avm::remove_kind(argv[0]));
-            return 0L;
-        });
-    }
+	if (!m_installed && method->name().find("autoStartEnabled") != std::string::npos)
+	{
+		hook_flash_function(method, [this] (avm::MethodEnv *env, uint32_t argc, uintptr_t *argv)
+		{
+			install(avm::remove_kind(argv[0]));
+			return 0L;
+		});
+	}
 }
 
 void Darkorbit::notify_freechunk(uintptr_t chunk)
 {
-    for (auto &[id, hook] : m_hooks)
-    {
-        if ((reinterpret_cast<uintptr_t>(hook.method) & ~0xfff) == chunk)
-        {
+	for (auto &[id, hook] : m_hooks)
+	{
+		if ((reinterpret_cast<uintptr_t>(hook.method) & ~0xfff) == chunk)
+		{
 			uninstall();
 		}
-    }
+	}
 }
 
 std::unordered_map<uint32_t, game::Ship *> Darkorbit::get_ships()
 {
-    std::unordered_map<uint32_t, game::Ship *> r;
+	std::unordered_map<uint32_t, game::Ship *> r;
 
-    auto ships = m_screen_manager->get_at<uintptr_t>(0x100, 0x28);
-    auto elements = memory::read<uintptr_t>(ships + 0x30);
-    auto size = memory::read<uint32_t>(ships + 0x38);
+	auto ships = m_screen_manager->get_at<uintptr_t>(0x100, 0x28);
+	auto elements = memory::read<uintptr_t>(ships + 0x30);
+	auto size = memory::read<uint32_t>(ships + 0x38);
 
-    for (size_t i = 0; i < size; i++)
-    {
-        auto *ship = avm::remove_kind(memory::read<game::Ship *>(elements + 0x10 + i * 8));
-        if (ship && flash_stuff::hasproperty(ship, "pet"))
+	for (size_t i = 0; i < size; i++)
+	{
+		auto *ship = avm::remove_kind(memory::read<game::Ship *>(elements + 0x10 + i * 8));
+		if (ship && flash_stuff::hasproperty(ship, "pet"))
 		{
 			r[ship->id] = ship;
 		}
-    }
-    return r;
+	}
+	return r;
 }
 
 std::future<uintptr_t> Darkorbit::call_sync(const std::function<uintptr_t()> &f)
 {
-    std::scoped_lock lk { m_call_mut };
-    return m_async_calls.emplace_back(f).get_future(); // c++ 17
+	std::scoped_lock lk { m_call_mut };
+	return m_async_calls.emplace_back(f).get_future(); // c++ 17
 }
 
 void Darkorbit::handle_async_calls(avm::MethodEnv *env, uint32_t argc, uintptr_t *argv)
 {
-    std::scoped_lock lk { m_call_mut };
-    for (auto &task : m_async_calls)
+	std::scoped_lock lk { m_call_mut };
+	for (auto &task : m_async_calls)
 	{
 		task();
 	}
-    m_async_calls.clear();
+	m_async_calls.clear();
 }
 
 bool Darkorbit::key_click(uint32_t key)
@@ -171,43 +171,43 @@ bool Darkorbit::key_click(uint32_t key)
 
 bool Darkorbit::lock_entity(uint32_t id)
 {
-    utils::log("[*] Trying to lock entity {}\n", id);
-    auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x70, 0x28);
+	utils::log("[*] Trying to lock entity {}\n", id);
+	auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x70, 0x28);
 
-    game::Ship *player = reinterpret_cast<game::Ship *>(avm::remove_kind(m_event_manager->call(7)));
-    game::Ship *target_ship = get_ships()[id];
+	game::Ship *player = reinterpret_cast<game::Ship *>(avm::remove_kind(m_event_manager->call(7)));
+	game::Ship *target_ship = get_ships()[id];
 
-    if (target_ship && player)
-    {
-        std::array<uintptr_t, 8> array_args {
-            TAG_NUMBER(target_ship->id),
-            TAG_NUMBER(target_ship->position().x),
-            TAG_NUMBER(target_ship->position().y),
-            TAG_NUMBER(player->position().x),
-            TAG_NUMBER(player->position().y),
+	if (target_ship && player)
+	{
+		std::array<uintptr_t, 8> array_args {
+			TAG_NUMBER(target_ship->id),
+			TAG_NUMBER(target_ship->position().x),
+			TAG_NUMBER(target_ship->position().y),
+			TAG_NUMBER(player->position().x),
+			TAG_NUMBER(player->position().y),
 			TAG_NUMBER(0),
 			TAG_NUMBER(0),
 			TAG_NUMBER(100 + rand() % 400), // radius
-        };
+		};
 
 		// Should call send_notification() but we leave it as is since it's not used anymore
-        auto *arg_array = (avm::Array *)flash_stuff::newarray(facade->vtable->methods[0], array_args.size(), array_args.data());
-        avm::String *notification = flash_stuff::newstring(facade->core(), "MapAssetNotificationTRY_TO_SELECT_MAPASSET");
+		auto *arg_array = (avm::Array *)flash_stuff::newarray(facade->vtable->methods[0], array_args.size(), array_args.data());
+		avm::String *notification = flash_stuff::newstring(facade->core(), "MapAssetNotificationTRY_TO_SELECT_MAPASSET");
 
-        facade->call(8, notification, (uintptr_t)arg_array | 1);
+		facade->call(8, notification, (uintptr_t)arg_array | 1);
 
-        utils::log("[*] Locking {}", target_ship->name());
-        return true;
-    }
-    return false;
+		utils::log("[*] Locking {}", target_ship->name());
+		return true;
+	}
+	return false;
 }
 
 bool Darkorbit::refine_ore(uint32_t ore, uint32_t amount)
 {
-    auto *refinement = m_gui_manager->get_at<avm::ScriptObject *>(0x78);
+	auto *refinement = m_gui_manager->get_at<avm::ScriptObject *>(0x78);
 
-    if (refinement)
-    {
+	if (refinement)
+	{
 		if (!m_refine_multiname)
 		{
 			auto disass = Disassembler::Disassemble(refinement->vtable->methods[20]->method_info);
@@ -223,28 +223,28 @@ bool Darkorbit::refine_ore(uint32_t ore, uint32_t amount)
 			}
 		}
 
-        if (m_refine_multiname)
-        {
+		if (m_refine_multiname)
+		{
 			auto *obj = flash_stuff::finddef(m_main->vtable->einit, m_const_pool->get_multiname(m_refine_multiname));
 
-            if (auto *closure = obj->get_at<avm::ClassClosure *>(0x20))
-            {
-                auto *instance = reinterpret_cast<avm::ScriptObject *>(closure->call(5));
+			if (auto *closure = obj->get_at<avm::ClassClosure *>(0x20))
+			{
+				auto *instance = reinterpret_cast<avm::ScriptObject *>(closure->call(5));
 
-                auto *ore_info = instance->get_at<avm::ScriptObject *>(0x20);
-                auto *ore_type = ore_info->get_at<avm::ScriptObject *>(0x20);
+				auto *ore_info = instance->get_at<avm::ScriptObject *>(0x20);
+				auto *ore_type = ore_info->get_at<avm::ScriptObject *>(0x20);
 
-                ore_info->write_at<double>(0x28, amount);
-                ore_type->write_at<int>(0x20, ore);
+				ore_info->write_at<double>(0x28, amount);
+				ore_type->write_at<int>(0x20, ore);
 
-                auto *net = m_main->get_at<avm::ScriptObject *>(0x230);
+				auto *net = m_main->get_at<avm::ScriptObject *>(0x230);
 
-                net->call(18, instance);
-            }
-        }
-    }
+				net->call(18, instance);
+			}
+		}
+	}
 
-    return true;
+	return true;
 }
 
 bool Darkorbit::use_item(const std::string &name, uint8_t type, uint8_t bar)
@@ -290,9 +290,9 @@ bool Darkorbit::use_item(const std::string &name, uint8_t type, uint8_t bar)
 
 bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> args)
 {
-    utils::log("[*] Send notification {}\n", name);
+	utils::log("[*] Send notification {}\n", name);
 
-    auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x70, 0x28);
+	auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x70, 0x28);
 
 	// no need to cache these, ref count is not increased
 	auto *arg_array =
@@ -306,19 +306,19 @@ bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> arg
 
 bool Darkorbit::install(uintptr_t main_app_address)
 {
-    m_main			= memory::read<avm::ScriptObject *>(main_app_address + 0x540);
+	m_main			= memory::read<avm::ScriptObject *>(main_app_address + 0x540);
 	m_screen_manager  = m_main->get_at<avm::ScriptObject *>(0x1f8);
-	m_gui_manager     = m_main->get_at<avm::ScriptObject *>(0x200);
+	m_gui_manager	 = m_main->get_at<avm::ScriptObject *>(0x200);
 	m_event_manager   = m_screen_manager->get_at<avm::ScriptObject *>(0xc8);
 
-    utils::log("[+] Main {x}\n", m_main);
-    utils::log("[+] Screen {x}\n", m_screen_manager);
-    utils::log("[+] Event {x}\n", m_event_manager);
+	utils::log("[+] Main {x}\n", m_main);
+	utils::log("[+] Screen {x}\n", m_screen_manager);
+	utils::log("[+] Event {x}\n", m_event_manager);
 
-	auto vtable          = m_main->get_at<uintptr_t>(0x10);
-	auto vtable_init     = memory::read<uintptr_t>(vtable + 0x10);
-	auto vtable_scope    = memory::read<uintptr_t>(vtable_init + 0x18);
-	abc_env         	 = memory::read<avm::AbcEnv *>(vtable_scope + 0x10);
+	auto vtable		  = m_main->get_at<uintptr_t>(0x10);
+	auto vtable_init	 = memory::read<uintptr_t>(vtable + 0x10);
+	auto vtable_scope	= memory::read<uintptr_t>(vtable_init + 0x18);
+	abc_env		 	 = memory::read<avm::AbcEnv *>(vtable_scope + 0x10);
 	m_const_pool 		= abc_env->pool;
 
 
@@ -347,10 +347,10 @@ bool Darkorbit::install(uintptr_t main_app_address)
 		return false;
 	}
 
-    if (auto timer_method = m_screen_manager->vtable->methods[34]->method_info)
-    {
+	if (auto timer_method = m_screen_manager->vtable->methods[34]->method_info)
+	{
 		using namespace std::placeholders;
-        utils::log("[+] Found gui timer method at {x}\n", reinterpret_cast<uintptr_t>(timer_method));
+		utils::log("[+] Found gui timer method at {x}\n", reinterpret_cast<uintptr_t>(timer_method));
 		hook_flash_function(timer_method, std::bind(&Darkorbit::handle_async_calls, this, _1, _2, _3));
 	}
 	else
@@ -359,7 +359,7 @@ bool Darkorbit::install(uintptr_t main_app_address)
 		return false;
 	}
 
-    if (!m_ipc.Running() && m_ipc.Init())
+	if (!m_ipc.Running() && m_ipc.Init())
 	{
 		m_ipc.Run();
 	}
@@ -368,24 +368,24 @@ bool Darkorbit::install(uintptr_t main_app_address)
 		// ....
 	}
 
-    return (m_installed = true);
+	return (m_installed = true);
 }
 
 bool Darkorbit::uninstall()
 {
-    utils::log("[-] Uninstalling...\n");
+	utils::log("[-] Uninstalling...\n");
 
-    for (auto &[id, hook] : m_hooks)
-    {
-        hook.restore();
-    }
-    m_hooks.clear();
+	for (auto &[id, hook] : m_hooks)
+	{
+		hook.restore();
+	}
+	m_hooks.clear();
 
 	m_refine_multiname = 0;
 	m_item_prop_mn = 0;
 
 
-    m_ipc.Remove();
-    m_installed = false;
-    return true;
+	m_ipc.Remove();
+	m_installed = false;
+	return true;
 }

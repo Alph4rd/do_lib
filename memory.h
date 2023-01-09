@@ -6,7 +6,7 @@
 
 namespace memory
 {
-    struct MemPage
+	struct MemPage
 	{
 		MemPage(uintptr_t s,uintptr_t e, 
 				char r, char w, char x, char c,
@@ -32,10 +32,10 @@ namespace memory
 	uintptr_t query_memory(uint8_t *query, const char *mask, const std::string &area = "");
 
 	inline uintptr_t query_memory(uint8_t *query, unsigned int len)
-    {
+	{
 		std::string mask(len, 'x');
-        return query_memory(query, mask.c_str());
-    }
+		return query_memory(query, mask.c_str());
+	}
 
 	uintptr_t find_pattern(const std::string &query, const std::string &segment);
 

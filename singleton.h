@@ -6,19 +6,19 @@ template <typename T>
 class Singleton
 {
 protected:
-    Singleton() { }
-    Singleton(const Singleton &&) = delete;
-    Singleton(Singleton &&) = delete;
-    Singleton &operator=(Singleton &&) = delete;
-    Singleton &operator=(const Singleton &&) = delete;
+	Singleton() { }
+	Singleton(const Singleton &&) = delete;
+	Singleton(Singleton &&) = delete;
+	Singleton &operator=(Singleton &&) = delete;
+	Singleton &operator=(const Singleton &&) = delete;
 
-    ~Singleton() { }
+	~Singleton() { }
 public:
-    static T &get()
-    {
-        static T instance { };
-        return instance;
-    }
+	static T &get()
+	{
+		static T instance { };
+		return instance;
+	}
 };
 
 #endif // SINGLETON_H

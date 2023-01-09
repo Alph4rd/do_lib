@@ -10,30 +10,30 @@ union Message;
 class Ipc
 {
 public:
-    Ipc() { }
+	Ipc() { }
 
-    bool Init();
+	bool Init();
 
-    const bool Running() const { return m_running; }
+	const bool Running() const { return m_running; }
 
-    void Run()
-    {
-        m_running = true;
-        m_runner_thread = std::thread(&Ipc::runner, this);
-    }
+	void Run()
+	{
+		m_running = true;
+		m_runner_thread = std::thread(&Ipc::runner, this);
+	}
 
-    void Remove();
+	void Remove();
 
-    ~Ipc();
+	~Ipc();
 private:
-    void handle_message();
-    void runner();
+	void handle_message();
+	void runner();
 
-    std::thread m_runner_thread;
-    int m_shmid;
+	std::thread m_runner_thread;
+	int m_shmid;
 	int m_sem;
-    Message *m_shared = nullptr;
-    bool m_running = false;
+	Message *m_shared = nullptr;
+	bool m_running = false;
 };
 
 
