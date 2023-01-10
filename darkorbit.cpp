@@ -288,7 +288,7 @@ bool Darkorbit::use_item(const std::string &name, uint8_t type, uint8_t bar)
     return false;
 }
 
-bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> args)
+bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> &args)
 {
     utils::log("[*] Send notification {}\n", name);
 

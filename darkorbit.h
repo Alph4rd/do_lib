@@ -151,7 +151,7 @@ public:
 
     bool use_item(const std::string &name, uint8_t type, uint8_t bar);
 
-    bool send_notification(const std::string &name, std::vector<Atom> args);
+    bool send_notification(const std::string &name, std::vector<Atom> &args);
 
     void hook_flash_function(avm::MethodEnv *method, MyInvoke_t handler);
     void hook_flash_function(avm::MethodInfo *method_info, MyInvoke_t handler);
