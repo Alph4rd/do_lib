@@ -150,21 +150,28 @@ bool Ipc::Init()
 void Ipc::Remove()
 {
     union semun dummy;
-    if (shmctl(m_shmid, IPC_RMID, NULL) == -1)
+
+    if (m_shared)
     {
-        utils::log("[Ipc::Remove] shmctl failed: {}\n", strerror(errno));
-    }
-    if (semctl(m_sem, 0, IPC_RMID, dummy) == -1)
-    {
-        utils::log("[Ipc::Remove] semctl failed: {}\n", strerror(errno));
+        if (shmctl(m_shmid, IPC_RMID, NULL) == -1)
+        {
+            utils::log("[Ipc::Remove] shmctl failed: {}\n", strerror(errno));
+        }
+        if (semctl(m_sem, 0, IPC_RMID, dummy) == -1)
+        {
+            utils::log("[Ipc::Remove] semctl failed: {}\n", strerror(errno));
+        }
     }
 
-    utils::log("[Ipc::Remove] waiting for runner thread to stop\n");
-
-    m_running = false;
-    if (m_runner_thread.joinable())
+    if (m_running)
     {
-        m_runner_thread.join();
+        utils::log("[Ipc::Remove] waiting for runner thread to stop\n");
+
+        m_running = false;
+        if (m_runner_thread.joinable())
+        {
+            m_runner_thread.join();
+        }
     }
 }
 
