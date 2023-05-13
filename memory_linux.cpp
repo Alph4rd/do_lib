@@ -48,7 +48,7 @@ std::vector<memory::MemPage> memory::get_pages(const std::string &name)
     return pages;
 }
 
-uintptr_t memory::query_memory(uint8_t *query, const char *mask, const std::string &area)
+uintptr_t memory::query_memory(uint8_t *query, const char *mask, uint32_t alignment, const std::string &area)
 {
     uintptr_t query_size = strlen(mask);
     uintptr_t size = 0;
@@ -57,7 +57,11 @@ uintptr_t memory::query_memory(uint8_t *query, const char *mask, const std::stri
     {
         size = region.end - region.start;
 
-        if (query_size > size || (uintptr_t(query) > region.start && uintptr_t(query) < region.end))
+        if (query_size > size 
+            || (uintptr_t(query) > region.start && uintptr_t(query) < region.end) 
+            || region.read == '-' 
+            || region.name == "[vvar]"
+        )
         {
             continue;
         }
@@ -104,5 +108,5 @@ uintptr_t memory::find_pattern(const std::string &query, const std::string &segm
             mask += "x";
         }
     }
-    return query_memory(&bytes.at(0), mask.c_str(), segment);
+    return query_memory(&bytes.at(0), mask.c_str(), 1, segment);
 }

@@ -143,6 +143,8 @@ public:
         return r;
     }
 
+    bool mouse_click(int x, int y, int button);
+
     bool key_click(uint32_t key);
 
     bool lock_entity(uint32_t id);
@@ -191,6 +193,8 @@ private:
 
     uint32_t m_refine_multiname = 0;
     uint32_t m_item_prop_mn = 0;
+
+    uintptr_t m_input_param = 0;
 
     avm::PoolObject     *m_const_pool = nullptr;
 

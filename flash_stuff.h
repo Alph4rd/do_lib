@@ -11,6 +11,8 @@ public:
     static bool install();
     static void uninstall();
 
+    static void                 mouse_release(int x, int y, int button);
+    static void                 mouse_press(int x, int y, int button);
     static bool                 hasproperty(avm::ScriptObject *obj, const std::string &prop_name);
     static uintptr_t            getproperty(Atom obj, avm::Multiname *mm, avm::VTable *vtable);
     static void                 setproperty(avm::ScriptObject *obj, avm::Multiname *mm, Atom value);

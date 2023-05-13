@@ -3,9 +3,7 @@
 #include "utils.h"
 #include "flash_stuff.h"
 #include "darkorbit.h"
-#include "memory.h"
 
-bool is_flash_process =false;
 
 void *dlopen(const char *filename, int flags)
 {
@@ -16,7 +14,6 @@ void *dlopen(const char *filename, int flags)
     // Install flash hooks
     if (filename && std::string(filename).find("libpepflashplayer.so") != std::string::npos)
     {
-        is_flash_process = true;
         if (!flash_stuff::install())
         {
             utils::log("[!] Failed to install flash hooks\n");

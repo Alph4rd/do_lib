@@ -29,12 +29,13 @@ namespace memory
 
     int unprotect(uint64_t address);
 
-    uintptr_t query_memory(uint8_t *query, const char *mask, const std::string &area = "");
+    uintptr_t query_memory(uint8_t *query, const char *mask, uint32_t alignment, const std::string &area = "");
 
-    inline uintptr_t query_memory(uint8_t *query, unsigned int len)
+
+    inline uintptr_t query_memory(uint8_t *query, uint32_t len, uint32_t alignment)
     {
         std::string mask(len, 'x');
-        return query_memory(query, mask.c_str());
+        return query_memory(query, mask.c_str(), alignment);
     }
 
     uintptr_t find_pattern(const std::string &query, const std::string &segment);

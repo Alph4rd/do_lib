@@ -4,20 +4,13 @@
 #include "memory.h"
 #include "utils.h"
 #include "darkorbit.h"
+#include "offsets.h"
 
-namespace flash_offsets
-{
-    std::ptrdiff_t verifyjit            = 0x2fb430;
-    std::ptrdiff_t free_chunk           = 0xb8a100;
-    std::ptrdiff_t getproperty          = 0x326c30;
-    std::ptrdiff_t setproperty          = 0x326a40;
-    std::ptrdiff_t get_traits_binding   = 0x32b4c0;
-    std::ptrdiff_t newarray             = 0x2def80;
-    std::ptrdiff_t newstring            = 0x322f00;
-    std::ptrdiff_t finddef              = 0x30fe50;
-};
+typedef uintptr_t (*mouse_release_t)(uintptr_t, int, int, int);
+mouse_release_t mouse_release_f = nullptr;
 
-
+typedef uintptr_t (*mouse_press_t)(uintptr_t, int, int, int);
+mouse_press_t mouse_press_f = nullptr;
 
 typedef uintptr_t (*getproperty_t)(uintptr_t, avm::Multiname *, avm::VTable *);
 getproperty_t getproperty_f = nullptr;
@@ -41,16 +34,15 @@ typedef avm::ScriptObject *(*finddef_t)(avm::MethodEnv *, avm::Multiname *);
 finddef_t finddef_f = nullptr;
 
 
-
 subhook::Hook *free_chunk_hook = nullptr;
 subhook::Hook *verify_jit_hook = nullptr;
+
+
 
 void verify_jit(uintptr_t _this, avm::MethodInfo *method, uintptr_t ms, uintptr_t toplevel, avm::AbcEnv *abc_env, uintptr_t osr)
 {
     subhook::ScopedHookRemove hk(verify_jit_hook);
-
     reinterpret_cast<decltype(verify_jit) *>(verify_jit_hook->GetSrc())(_this, method, ms, toplevel, abc_env, osr);
-
     Darkorbit::get().notify_jit(method);
 }
 
@@ -61,6 +53,41 @@ void free_chunk(uintptr_t _this, uintptr_t chunk)
     reinterpret_cast<decltype(free_chunk) *>(free_chunk_hook->GetSrc())(_this, chunk);
 }
 
+uintptr_t get_input_param()
+{
+    static uintptr_t input_param = 0;
+    if (!input_param)
+    {
+        uintptr_t input_thing_vtable = memory::get_pages("libpepflashplayer").at(0).start + offsets::input_thing_vt;
+        uintptr_t input_thing = memory::query_memory(reinterpret_cast<uint8_t *>(&input_thing_vtable), sizeof(uintptr_t), 8);
+
+        if (!input_thing)
+        {
+            utils::log("[!] Failed to find input param\n");
+            return 0;
+        }
+        input_param = memory::read<uintptr_t>(input_thing + 0xa8, 0x3e8);
+    }
+    return input_param;
+}
+
+void flash_stuff::mouse_release(int x, int y, int button)
+{
+    uintptr_t param1 = get_input_param();
+    if (param1)
+    {
+        mouse_release_f(param1, x, y, button);
+    }
+}
+
+void flash_stuff::mouse_press(int x, int y, int button)
+{
+    uintptr_t param1 = get_input_param();
+    if (param1)
+    {
+        mouse_press_f(param1, x, y, button);
+    }
+}
 
 bool flash_stuff::hasproperty(avm::ScriptObject *obj, const std::string &prop_name)
 {
@@ -111,25 +138,27 @@ bool flash_stuff::install()
     }
 
     verify_jit_hook = new subhook::Hook(
-                reinterpret_cast<void *>(base + flash_offsets::verifyjit),
+                reinterpret_cast<void *>(base + offsets::verifyjit),
                 reinterpret_cast<void *>(verify_jit),
                 subhook::HookFlags::HookFlag64BitOffset);
 
     verify_jit_hook->Install();
 
     free_chunk_hook = new subhook::Hook(
-                reinterpret_cast<void *>(base + flash_offsets::free_chunk),
+                reinterpret_cast<void *>(base + offsets::free_chunk),
                 reinterpret_cast<void *>(free_chunk),
                 subhook::HookFlags::HookFlag64BitOffset);
 
     free_chunk_hook->Install();
 
-    getproperty_f           = reinterpret_cast<getproperty_t>(base + flash_offsets::getproperty);
-    setproperty_f           = reinterpret_cast<setproperty_t>(base + flash_offsets::setproperty);
-    get_traits_binding_f    = reinterpret_cast<get_traits_binding_t>(base + flash_offsets::get_traits_binding);
-    newarray_f              = reinterpret_cast<newarray_t>(base + flash_offsets::newarray);
-    newstring_f             = reinterpret_cast<newstring_t>(base + flash_offsets::newstring);
-    finddef_f               = reinterpret_cast<finddef_t>(base + flash_offsets::finddef);
+    getproperty_f           = reinterpret_cast<getproperty_t>(base + offsets::getproperty);
+    setproperty_f           = reinterpret_cast<setproperty_t>(base + offsets::setproperty);
+    get_traits_binding_f    = reinterpret_cast<get_traits_binding_t>(base + offsets::get_traits_binding);
+    newarray_f              = reinterpret_cast<newarray_t>(base + offsets::newarray);
+    newstring_f             = reinterpret_cast<newstring_t>(base + offsets::newstring);
+    finddef_f               = reinterpret_cast<finddef_t>(base + offsets::finddef);
+    mouse_release_f           = reinterpret_cast<mouse_release_t>(base + offsets::mouse_release);
+    mouse_press_f           = reinterpret_cast<mouse_press_t>(base + offsets::mouse_press);
 
     return true;
 }

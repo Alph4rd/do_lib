@@ -15,6 +15,8 @@
 
 #define MEM_SIZE 1024
 
+using namespace std::chrono_literals;
+
 union semun
 { 
     int                 val;
@@ -34,6 +36,7 @@ enum class MessageType
     UPGRADE,
     USE_ITEM,
     KEY_CLICK,
+    MOUSE_CLICK,
     NONE
 
 };
@@ -89,6 +92,15 @@ struct KeyClickMessage
     uint32_t key;
 };
 
+struct MouseClickMessage
+{
+    MessageType type = MessageType::MOUSE_CLICK;
+    uint32_t button;
+    int32_t x;
+    int32_t y;
+};
+
+
 union Message
 {
     Message() { };
@@ -99,6 +111,7 @@ union Message
     RefineMessage refine;
     UseItemMessage item;
     KeyClickMessage key;
+    MouseClickMessage click;
 };
 
 static_assert(sizeof(Message) < MEM_SIZE, "Message is larger than the allocated shared memory");
@@ -164,6 +177,8 @@ void Ipc::handle_message()
 
 
     auto *result = reinterpret_cast<FunctionResultMessage *>(m_shared);
+
+
     switch (m_shared->type)
     {
         case MessageType::CALL:
@@ -189,11 +204,19 @@ void Ipc::handle_message()
             auto res = Darkorbit::get().call_sync([call] {
                 return call->object->call_method(call->index, call->argc, call->argv);
             });
-            auto value = res.get();
 
-            result->type = MessageType::RESULT;
-            result->error = false;
-            result->value = value;
+            if (res.wait_for(5000ms) != std::future_status::ready)
+            {
+                result->error = true;
+                result->type = MessageType::RESULT;
+            }
+            else
+            {
+                auto value = res.get();
+                result->type = MessageType::RESULT;
+                result->error = false;
+                result->value = value;
+            }
             break;
         }
         case MessageType::SEND_NOTIFICATION:
@@ -216,7 +239,11 @@ void Ipc::handle_message()
                 return Darkorbit::get().send_notification(name, args);
             });
 
-            res.get();
+            if (res.wait_for(5000ms) != std::future_status::ready)
+            {
+                result->error = true;
+                result->type = MessageType::RESULT;
+            }
             break;
         }
         case MessageType::USE_ITEM:
@@ -229,7 +256,11 @@ void Ipc::handle_message()
                 return Darkorbit::get().use_item(name, 0, 1);
             });
 
-            res.get();
+            if (res.wait_for(5000ms) != std::future_status::ready)
+            {
+                result->error = true;
+                result->type = MessageType::RESULT;
+            }
             break;
         }
         case MessageType::REFINE:
@@ -240,7 +271,12 @@ void Ipc::handle_message()
                 return Darkorbit::get().refine_ore(ore, amount);
             });
 
-            res.get();
+            if (res.wait_for(5000ms) != std::future_status::ready)
+            {
+                result->error = true;
+                result->type = MessageType::RESULT;
+            }
+
             break;
         }
         case MessageType::KEY_CLICK:
@@ -251,9 +287,32 @@ void Ipc::handle_message()
                 return Darkorbit::get().key_click(key);
             });
 
-            res.get();
+            if (res.wait_for(5000ms) != std::future_status::ready)
+            {
+                result->error = true;
+                result->type = MessageType::RESULT;
+            }
+
             break;
         }
+        case MessageType::MOUSE_CLICK:
+        {
+            auto *msg = reinterpret_cast<MouseClickMessage *>(m_shared);
+            auto res = Darkorbit::get().call_sync([msg]
+            {
+                return Darkorbit::get().mouse_click(msg->x, msg->y, msg->button);
+            });
+
+            if (res.wait_for(5000ms) != std::future_status::ready)
+            {
+                result->error = true;
+                result->type = MessageType::RESULT;
+            }
+
+            break;
+        }
+
+
         default:
             utils::log("[Ipc::handle_message] Unknown ipc message type {x}\n", static_cast<int>(m_shared->type));
             break;
@@ -290,6 +349,7 @@ void Ipc::runner()
             break;
         }
     }
+    utils::log("[Ipc::runner] Stopped\n");
 }
 
 Ipc::~Ipc()

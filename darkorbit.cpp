@@ -4,6 +4,7 @@
 
 #include "disassembler.h"
 #include "memory.h"
+#include "offsets.h"
 
 
 #define TAG_NUMBER(val) (uintptr_t(val) << 3) | 6
@@ -162,6 +163,13 @@ void Darkorbit::handle_async_calls(avm::MethodEnv *env, uint32_t argc, uintptr_t
     m_async_calls.clear();
 }
 
+bool Darkorbit::mouse_click(int x, int y, int button)
+{
+    flash_stuff::mouse_press(x, y, button);
+    flash_stuff::mouse_release(x, y, button);
+    return true;
+}
+
 bool Darkorbit::key_click(uint32_t key)
 {
     auto *kbmapper = m_event_manager->get_at<avm::ScriptObject *>(0x68);
@@ -306,6 +314,8 @@ bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> arg
 
 bool Darkorbit::install(uintptr_t main_app_address)
 {
+    mouse_click(0, 0, 1); // Mouse click to initialize the click param
+
     m_main            = memory::read<avm::ScriptObject *>(main_app_address + 0x540);
     m_screen_manager  = m_main->get_at<avm::ScriptObject *>(0x1f8);
     m_gui_manager     = m_main->get_at<avm::ScriptObject *>(0x200);
@@ -333,11 +343,11 @@ bool Darkorbit::install(uintptr_t main_app_address)
     }
     else if (auto *menu_proxy = menu_proxy_obj->get_at<avm::ClassClosure *>(0x20))
     {
-        avm::ScriptObject *proxy_object        = menu_proxy->construct();
-        avm::MethodEnv *send_action            = proxy_object->vtable->get_methods().at(36);
-        uint32_t packet_mn                    = send_action->method_info->get_params()[0];
-        avm::Multiname *mn                    = m_const_pool->get_multiname(packet_mn);
-        auto *global                        = flash_stuff::finddef(send_action, mn);
+        avm::ScriptObject *proxy_object = menu_proxy->construct();
+        avm::MethodEnv *send_action     = proxy_object->vtable->get_methods().at(36);
+        uint32_t packet_mn              = send_action->method_info->get_params()[0];
+        avm::Multiname *mn              = m_const_pool->get_multiname(packet_mn);
+        avm::ScriptObject *global       = flash_stuff::finddef(send_action, mn);
 
         m_action_closure = global->get_at<avm::ClassClosure *>(0x20);
     }
@@ -348,6 +358,18 @@ bool Darkorbit::install(uintptr_t main_app_address)
     }
 
     if (auto timer_method = m_screen_manager->vtable->methods[34]->method_info)
+    {
+        using namespace std::placeholders;
+        utils::log("[+] Found gui timer method at {x}\n", reinterpret_cast<uintptr_t>(timer_method));
+        hook_flash_function(timer_method, std::bind(&Darkorbit::handle_async_calls, this, _1, _2, _3));
+    }
+    else
+    {
+        utils::log("[!] Failed to find GuiManager timer!!\n");
+        return false;
+    }
+
+    if (auto timer_method = m_gui_manager->vtable->methods->method_info)
     {
         using namespace std::placeholders;
         utils::log("[+] Found gui timer method at {x}\n", reinterpret_cast<uintptr_t>(timer_method));
