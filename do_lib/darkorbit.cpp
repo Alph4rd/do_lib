@@ -369,18 +369,6 @@ bool Darkorbit::install(uintptr_t main_app_address)
         return false;
     }
 
-    if (auto timer_method = m_gui_manager->vtable->methods->method_info)
-    {
-        using namespace std::placeholders;
-        utils::log("[+] Found gui timer method at {x}\n", reinterpret_cast<uintptr_t>(timer_method));
-        hook_flash_function(timer_method, std::bind(&Darkorbit::handle_async_calls, this, _1, _2, _3));
-    }
-    else
-    {
-        utils::log("[!] Failed to find GuiManager timer!!\n");
-        return false;
-    }
-
     if (!m_ipc.Running() && m_ipc.Init())
     {
         m_ipc.Run();
