@@ -366,6 +366,78 @@ namespace avm
         Traits *traits() const { return reinterpret_cast<Traits *>(ptr); }
     };
 
+    enum BuiltinType
+    {
+        BUILTIN_any,    // this is the "*" type in AS3, corresponds to a NULL Traits in C++ (not the "null" value in AS3")
+        BUILTIN_array,
+        BUILTIN_boolean,
+        BUILTIN_class,  // class Class only, not subclasses of Class
+        BUILTIN_date,
+        BUILTIN_error,
+        BUILTIN_function,
+        BUILTIN_int,
+        BUILTIN_math,
+        BUILTIN_methodClosure,
+        BUILTIN_namespace,
+        BUILTIN_null,   // this is the "null" AS3 value, not a NULL Traits* in C++
+        BUILTIN_number,
+        BUILTIN_object, // this is Object specifically, not a subclass thereof
+        BUILTIN_qName,
+        BUILTIN_regexp,
+        BUILTIN_string,
+        BUILTIN_uint,
+        BUILTIN_vector,
+        BUILTIN_vectordouble,
+        BUILTIN_vectorint,
+        BUILTIN_vectorobj,
+        BUILTIN_vectoruint,
+        BUILTIN_void,
+        BUILTIN_xmlList,
+        BUILTIN_xml,
+
+        BUILTIN_none,       // "none of the above" (ie it's not any of the rest of this enum)
+
+        BUILTIN_COUNT
+    };
+
+    class MethodSignature {
+        public:
+        union AtomOrType {
+            Traits *paramType;
+            Atom defaultValue;
+        };
+
+        uintptr_t cpp_vtable;
+        uintptr_t next_qCache_item;
+        Traits *_returnTraits;      // written with explicit WB
+        uint8_t *_abc_code_start; // start of ABC body
+        int param_count;       // number of declared parameters including optionals
+        int optional_count;    // last optional_count params are optional
+        int rest_offset;       // offset to first rest arg, including the instance parameter. this is sum(sizeof(paramType(0..N)))
+        int max_stack;         // abc-only: max stack
+        int local_count;       // abc-only: maximum number of local registers
+        int max_scope;         // abc-only: maximum depth of local scope stack
+        int frame_size;        // abc-only: total size of frame in number of Atoms, derived from other values above
+        // Note that these two flags are "bool" because we will have to pad the struct anyway;
+        // might as well avoid per-bit access as long as we have the space.
+        bool isNative;          // dupe of owner's flag of same name.
+        bool allowExtraArgs;    // == _needRest | _needArguments | _ignoreRest
+        AtomOrType _args[1];
+
+        int requiredParamCount() const {
+            return param_count - optional_count;
+        }
+
+        Traits *paramTraits(int i) {
+            return _args[i].paramType;
+        }
+
+        Atom getDefaultValue(int i) {
+            return _args[i + param_count + 1].defaultValue;
+        }
+    };
+
+
     struct MethodInfo
     {
         uintptr_t vtable;

@@ -156,11 +156,13 @@ public:
     bool send_notification(const std::string &name, std::vector<Atom> args);
 
     void hook_flash_function(avm::MethodEnv *method, MyInvoke_t handler);
+
     void hook_flash_function(avm::MethodInfo *method_info, MyInvoke_t handler);
 
     std::unordered_map<uint32_t, game::Ship *> get_ships();
 
     void notify_jit(avm::MethodInfo *method);
+
     void notify_freechunk(uintptr_t chunk);
 
     FlashHook &gethook(uint32_t id) { return m_hooks[id]; };
@@ -170,6 +172,16 @@ public:
     std::future<uintptr_t> call_sync(const std::function<uintptr_t()> &f);
 
     void cleanup();
+
+    avm::BuiltinType inline get_builtin_type(avm::Traits *traits)
+    {
+        return traits ? avm::BuiltinType(traits->builtinType) : avm::BUILTIN_any;
+    }
+
+    int check_method_signature(avm::ScriptObject *obj, int methodIdx, bool methodName, const std::string &signature);
+
+    std::string get_method_signature(avm::MethodInfo *mi, bool method_name);
+
 
 
 friend class Singleton;

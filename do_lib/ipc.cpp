@@ -37,6 +37,7 @@ enum class MessageType
     USE_ITEM,
     KEY_CLICK,
     MOUSE_CLICK,
+    CHECK_SIGNATURE,
     NONE
 
 };
@@ -100,6 +101,16 @@ struct MouseClickMessage
     int32_t y;
 };
 
+struct CheckSignatureMessage
+{
+    MessageType type = MessageType::CHECK_SIGNATURE;;
+    avm::ScriptObject *object;
+    uint32_t index;
+    bool method_name;
+    char signature[0x100];
+
+    int32_t result;
+};
 
 union Message
 {
@@ -112,6 +123,7 @@ union Message
     UseItemMessage item;
     KeyClickMessage key;
     MouseClickMessage click;
+    CheckSignatureMessage sig;
 };
 
 static_assert(sizeof(Message) < MEM_SIZE, "Message is larger than the allocated shared memory");
@@ -182,9 +194,7 @@ void Ipc::handle_message()
         return;
     }
 
-
     auto *result = reinterpret_cast<FunctionResultMessage *>(m_shared);
-
 
     switch (m_shared->type)
     {
@@ -318,8 +328,30 @@ void Ipc::handle_message()
 
             break;
         }
+        case MessageType::CHECK_SIGNATURE:
+        {
+            auto *sig_result = reinterpret_cast<CheckSignatureMessage *>(m_shared);
+            auto *msg = reinterpret_cast<CheckSignatureMessage *>(m_shared);
 
 
+            auto res = Darkorbit::get().call_sync([msg]
+            {
+                return Darkorbit::get().check_method_signature(msg->object, msg->index, msg->method_name, msg->signature);
+            });
+
+
+            if (res.wait_for(5000ms) == std::future_status::ready)
+            {
+                sig_result->result = res.get();
+            }
+            else
+            {
+                utils::log("[Ipc::handle_message] Signature check timed out");
+                sig_result->result = -1;
+            }
+
+            break;
+        }
         default:
             utils::log("[Ipc::handle_message] Unknown ipc message type {x}\n", static_cast<int>(m_shared->type));
             break;

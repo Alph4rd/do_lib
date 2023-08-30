@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <fstream>
+#include <cstring>
 
 #include "utils.h"
 #include "proc_util.h"
@@ -29,6 +30,8 @@ enum class MessageType
     USE_ITEM,
     KEY_CLICK,
     MOUSE_CLICK,
+    CHECK_SIGNATURE,
+
     NONE
 };
 
@@ -91,6 +94,17 @@ struct MouseClickMessage
     int32_t y;
 };
 
+struct GetSignatureMessage
+{
+    MessageType type = MessageType::CHECK_SIGNATURE;;
+    uintptr_t object;
+    uint32_t index;
+    bool method_name;
+    char signature[0x100];
+
+    int32_t result;
+};
+
 union Message
 {
     Message() { };
@@ -102,6 +116,7 @@ union Message
     UseItemMessage item;
     KeyClickMessage key;
     MouseClickMessage click;
+    GetSignatureMessage sig;
 };
 
 
@@ -406,3 +421,18 @@ bool BotClient::MouseClick(int32_t x, int32_t y, uint32_t button)
     return true;
 }
 
+int BotClient::CheckMethodSignature(uintptr_t object, uint32_t index, bool check_name, const std::string &sig)
+{
+    Message message;
+    message.type = MessageType::CHECK_SIGNATURE;
+    message.sig.object = object;
+    message.sig.index = index;
+    message.sig.method_name = check_name;
+
+    strncpy(message.sig.signature, sig.c_str(), sizeof(message.sig.signature));
+
+    Message response;
+    SendFlashCommand(&message, &response);
+
+    return response.sig.result;
+}

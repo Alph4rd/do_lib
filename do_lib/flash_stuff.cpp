@@ -33,6 +33,9 @@ newstring_t newstring_f = nullptr;
 typedef avm::ScriptObject *(*finddef_t)(avm::MethodEnv *, avm::Multiname *);
 finddef_t finddef_f = nullptr;
 
+typedef avm::MethodSignature *(*get_method_signature_t)(avm::MethodInfo *mi);
+get_method_signature_t get_method_signature_f = nullptr;
+
 
 subhook::Hook *free_chunk_hook = nullptr;
 subhook::Hook *verify_jit_hook = nullptr;
@@ -124,6 +127,11 @@ avm::ScriptObject *flash_stuff::finddef(avm::MethodEnv *env, avm::Multiname *mn)
     return finddef_f(env, mn);
 }
 
+avm::MethodSignature *flash_stuff::get_method_signature(avm::MethodInfo *mi)
+{
+    return get_method_signature_f(mi);
+}
+
 bool flash_stuff::install()
 {
     uintptr_t base = 0;
@@ -159,6 +167,7 @@ bool flash_stuff::install()
     finddef_f               = reinterpret_cast<finddef_t>(base + offsets::finddef);
     mouse_release_f           = reinterpret_cast<mouse_release_t>(base + offsets::mouse_release);
     mouse_press_f           = reinterpret_cast<mouse_press_t>(base + offsets::mouse_press);
+    get_method_signature_f = reinterpret_cast<get_method_signature_t>(base + offsets::get_method_sig);
 
     return true;
 }

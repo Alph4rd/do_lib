@@ -1,6 +1,7 @@
 #include "darkorbit.h"
 #include <string>
 #include <iostream>
+#include <sstream>
 
 #include "disassembler.h"
 #include "memory.h"
@@ -310,6 +311,58 @@ bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> arg
     facade->call(8, notification, (uintptr_t)arg_array | 1);
 
     return true;
+}
+
+int Darkorbit::check_method_signature(avm::ScriptObject *obj, int methodIdx, bool methodName, const std::string &signature)
+{
+    if (obj) {
+        avm::MethodEnv *method = obj->vtable->methods[methodIdx];
+        if (method && method->method_info) {
+            std::string flashSignature = get_method_signature(method->method_info, methodName);
+
+            utils::log("Signature: {} == {}\n", signature, flashSignature);
+            return !flashSignature.empty() && flashSignature == signature;
+        }
+    }
+
+    return -1;
+}
+
+std::string Darkorbit::get_method_signature(avm::MethodInfo *mi, bool method_name)
+{
+    std::stringstream ss;
+
+    avm::MethodSignature *ms = flash_stuff::get_method_signature(mi);
+    if (ms) {
+        ss << get_builtin_type(ms->_returnTraits);
+
+        if (method_name) {
+            std::string mn = mi->name();
+            if (mn.empty()) return "";
+
+            ss << "(";
+            auto index = mn.find('/');
+            if (index != std::string::npos) {
+                ss << mn.substr(index + 1);
+            } else ss << mn;
+            ss << ")";
+        }
+
+        ss << "(";
+        for (int i = 0; i <= ms->param_count; i++) {
+            auto bt = get_builtin_type(ms->paramTraits(i));
+
+            ss << bt;
+            if (i > ms->param_count - ms->optional_count) {
+                ss << "?";
+            }
+        }
+
+        ss << ")" << ms->param_count << ms->optional_count << ms->rest_offset << ms->max_stack
+        << ms->local_count << ms->max_scope << ms->frame_size << ms->isNative << ms->allowExtraArgs;
+    }
+
+    return ss.str();
 }
 
 bool Darkorbit::install(uintptr_t main_app_address)

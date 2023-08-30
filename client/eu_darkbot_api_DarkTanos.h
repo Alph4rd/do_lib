@@ -311,6 +311,14 @@ JNIEXPORT jboolean JNICALL Java_eu_darkbot_api_DarkTanos_useItem
 JNIEXPORT jlong JNICALL Java_eu_darkbot_api_DarkTanos_callMethod
   (JNIEnv *, jobject, jlong, jint, jlongArray);
 
+/*
+ * Class:     eu_darkbot_api_DarkTanos
+ * Method:    checkMethodSignature
+ * Signature: (JIZLjava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_eu_darkbot_api_DarkTanos_checkMethodSignature
+  (JNIEnv *, jobject, jlong, jint, jboolean, jstring);
+
 #ifdef __cplusplus
 }
 #endif

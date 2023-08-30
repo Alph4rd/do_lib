@@ -15,6 +15,7 @@ namespace offsets
     static const std::ptrdiff_t input_thing_vt       = 0x131b710;
     static const std::ptrdiff_t mouse_release        = 0x72fe90;
     static const std::ptrdiff_t mouse_press          = 0x7306e0;
+    static const std::ptrdiff_t get_method_sig       = 0x314430;
 }
 
 #endif // OFFSETS_H

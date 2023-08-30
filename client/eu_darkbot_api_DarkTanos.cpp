@@ -19,7 +19,7 @@ JNIEXPORT void JNICALL Java_eu_darkbot_api_DarkTanos_setData
 
     client.SetCredentials(sid_cstr, url_cstr);
 
-    env->ReleaseStringUTFChars(jsid, url_cstr);
+    env->ReleaseStringUTFChars(jurl, url_cstr);
     env->ReleaseStringUTFChars(jsid, sid_cstr);
 }
 
@@ -295,3 +295,16 @@ JNIEXPORT jlong JNICALL Java_eu_darkbot_api_DarkTanos_callMethod
     env->GetLongArrayRegion(jargs, 0, args.size(), reinterpret_cast<jlong *>(&args[0]));
     return client.CallMethod(jthis, jindex, args);
 }
+
+JNIEXPORT jint JNICALL Java_eu_darkbot_api_DarkTanos_checkMethodSignature
+  (JNIEnv *env, jobject, jlong object, jint index, jboolean check_name, jstring sig)
+{
+    const char *sig_cstr = env->GetStringUTFChars(sig, NULL);
+
+    int result = client.CheckMethodSignature(object, index, check_name, sig_cstr);
+
+    env->ReleaseStringUTFChars(sig, sig_cstr);
+
+    return result;
+}
+

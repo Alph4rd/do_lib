@@ -20,6 +20,7 @@ public:
     static uintptr_t            newarray(avm::MethodEnv *, uint32_t, void *);
     static avm::String          *newstring(avm::AvmCore *, const std::string &s);
     static avm::ScriptObject    *finddef(avm::MethodEnv *, avm::Multiname *);
+    static avm::MethodSignature *get_method_signature(avm::MethodInfo *);
 };
 
 #endif // FLASH_STUFF_H
