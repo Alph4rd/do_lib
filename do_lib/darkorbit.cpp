@@ -292,7 +292,7 @@ bool Darkorbit::use_item(const std::string &name, uint8_t type, uint8_t bar)
     instance->set_at(type, 0x20);
     instance->set_at(bar, 0x24);
 
-    net->call(18, instance);
+    net->call(19, instance);
 
     return false;
 }
