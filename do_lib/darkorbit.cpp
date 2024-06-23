@@ -248,7 +248,7 @@ bool Darkorbit::refine_ore(uint32_t ore, uint32_t amount)
 
                 auto *net = m_main->get_at<avm::ScriptObject *>(0x230);
 
-                net->call(18, instance);
+                net->call(19, instance);
             }
         }
     }
