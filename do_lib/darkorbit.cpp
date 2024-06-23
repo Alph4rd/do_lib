@@ -20,7 +20,7 @@ uintptr_t hook_proxy(avm::MethodEnv *env, uint32_t argc, uintptr_t *argv)
 
     // Restore invokers
     hook.restore();
-    
+
     hook.handler(env, argc, argv);
 
     // Call original
@@ -181,7 +181,7 @@ bool Darkorbit::key_click(uint32_t key)
 bool Darkorbit::lock_entity(uint32_t id)
 {
     utils::log("[*] Trying to lock entity {}\n", id);
-    auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x70, 0x28);
+    auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x78, 0x28);
 
     game::Ship *player = reinterpret_cast<game::Ship *>(avm::remove_kind(m_event_manager->call(7)));
     game::Ship *target_ship = get_ships()[id];
@@ -248,7 +248,7 @@ bool Darkorbit::refine_ore(uint32_t ore, uint32_t amount)
 
                 auto *net = m_main->get_at<avm::ScriptObject *>(0x230);
 
-                net->call(18, instance);
+                net->call(19, instance);
             }
         }
     }
@@ -301,7 +301,7 @@ bool Darkorbit::send_notification(const std::string &name, std::vector<Atom> arg
 {
     utils::log("[*] Send notification {}\n", name);
 
-    auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x70, 0x28);
+    auto facade = m_screen_manager->get_at<avm::ScriptObject *>(0x100, 0x78, 0x28);
 
     // no need to cache these, ref count is not increased
     auto *arg_array =
